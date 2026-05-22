@@ -98,13 +98,12 @@ def index():
 def update_data():
     current_time = time.time()
     for t_id in stations_data:
-if stations_data[t_id]["last_seen"] == 0 or (current_time - stations_data[t_id]["last_seen"] > 10):
+        if stations_data[t_id]["last_seen"] == 0 or (current_time - stations_data[t_id]["last_seen"] > 10):
             stations_data[t_id]["status_conn"] = "Mất kết nối"
         else:
             stations_data[t_id]["status_conn"] = "Trực tuyến"
 
     return jsonify(stations_data)
-
 
 @app.route('/api/control', methods=['POST'])
 def control():
