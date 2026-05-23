@@ -81,7 +81,7 @@
         });
 
         function updateUI() {
-            fetch('/api/update')
+            fetch('/api/update?_t=' + new Date().getTime())
                 .then(r => r.json())
                 .then(data => {
                     stations.forEach(id => {
