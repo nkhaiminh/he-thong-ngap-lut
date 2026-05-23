@@ -82,7 +82,7 @@
 
         function updateUI() {
             console.log("Đang gọi API..."); // THÊM DÒNG NÀY
-            fetch('/api/update')
+            fetch('https://app-ngap-lut-.onrender.com/api/update')
                 .then(r => r.json())
                 .then(data => {
                     console.log("Dữ liệu nhận được:", data);
