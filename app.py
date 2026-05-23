@@ -1,5 +1,5 @@
 import paho.mqtt.client as mqtt
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request 
 import threading
 import time
 import random
