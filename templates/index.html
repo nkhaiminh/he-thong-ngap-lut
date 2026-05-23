@@ -80,33 +80,33 @@
             });
         });
 
-        function updateUI() {
-    // Thêm { cache: 'no-store' } để ép trình duyệt luôn lấy dữ liệu mới từ server
-    fetch('/api/update?_t=' + new Date().getTime(), { cache: 'no-store' })
-        .then(r => r.json())
-        .then(data => {
-            stations.forEach(id => {
-                const info = data[id];
-                const val = info.val;
+       <script>
+    function updateUI() {
+        fetch('/api/update?_t=' + new Date().getTime(), { cache: 'no-store' })
+            .then(r => r.json())
+            .then(data => {
+                stations.forEach(id => {
+                    const info = data[id];
+                    document.getElementById(`val-${id}`).innerText = info.val;
+                    document.getElementById(`rain-${id}`).innerText = info.rain_percent;
+                    document.getElementById(`pred-${id}`).innerText = info.pred;
+                    document.getElementById(`barrier-${id}`).innerText = info.barrier;
 
-                document.getElementById(`val-${id}`).innerText = val;
-                document.getElementById(`rain-${id}`).innerText = info.rain_percent;
-                document.getElementById(`pred-${id}`).innerText = info.pred;
-                document.getElementById(`barrier-${id}`).innerText = info.barrier;
+                    const connElem = document.getElementById(`conn-${id}`);
+                    connElem.innerText = info.status_conn;
+                    connElem.className = info.status_conn === "Trực tuyến" ? "badge bg-success conn-badge" : "badge bg-danger conn-badge";
 
-                const connElem = document.getElementById(`conn-${id}`);
-                connElem.innerText = info.status_conn;
-                connElem.className = info.status_conn === "Trực tuyến" ? "badge bg-success conn-badge" : "badge bg-danger conn-badge";
-
-                const descElem = document.getElementById(`level-desc-${id}`);
-                // Bạn đảm bảo phần code xử lý descElem ở dưới này giữ nguyên như cũ nhé
-                if (descElem) {
-                    descElem.innerText = info.level_desc;
-                    descElem.style.color = info.status_color;
-                }
-            });
-        });
-}
+                    const descElem = document.getElementById(`level-desc-${id}`);
+                    if (descElem) {
+                        descElem.innerText = info.level_desc;
+                        descElem.style.color = info.status_color;
+                    }
+                });
+            })
+            .catch(err => console.error("Lỗi:", err));
+    }
+    setInterval(updateUI, 2000);
+</script>
 
         if (val < 1) {
             descElem.innerHTML = "<span class='text-success'>An toàn (Không ngập)</span>";
