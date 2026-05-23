@@ -12,8 +12,9 @@ app = Flask(__name__)
 CORS(app) # 2. Thêm dòng này sau khi tạo app Flask
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC_SUB = "hcmut/phongngap/#"
-MQTT_TOPIC_PUB_PREFIX = "hcmut/phongngap/control/"
+# Sửa dòng này trong app.py
+MQTT_TOPIC_SUB = "iuh/phongngap/#"
+MQTT_TOPIC_PUB_PREFIX = "/phongngap/control/"
 
 app = Flask(__name__)
 
@@ -52,25 +53,27 @@ def run_ai_prediction(tuyen_id):
 
 def on_message(client, userdata, msg):
     try:
-        topic = msg.topic
-        payload_data = json.loads(msg.payload.decode())
+        topic = msg.topic # Ví dụ: iuh/phongngap/tuyen1/nuoc
+        payload_data = json.loads(msg.payload.decode()) # Ví dụ: {"water":0, "rain":100}
 
-        water_level = float(payload_data.get("water", 0))
-        rain_percent = float(payload_data.get("rain", 0))
+        # Trích xuất tên trạm từ topic
+        # Giả sử topic luôn có dạng iuh/phongngap/tuyenX/...
+        parts = topic.split('/')
+        if len(parts) >= 3:
+            t_id = parts[2] # Kết quả sẽ là "tuyen1", "tuyen2"...
+            
+            water_level = float(payload_data.get("water", 0))
+            rain_percent = float(payload_data.get("rain", 0))
 
-        for i in range(1, 4):
-            t_id = f"tuyen{i}"
-            if t_id in topic:
-                # Lưu vào lịch sử cho AI
+            if t_id in stations_data:
                 data_history[t_id].append({"water": water_level, "rain_percent": rain_percent})
-
-                # Cập nhật dữ liệu hiển thị
                 stations_data[t_id]["val"] = water_level
                 stations_data[t_id]["rain_percent"] = rain_percent
                 stations_data[t_id]["pred"] = run_ai_prediction(t_id)
                 stations_data[t_id]["last_seen"] = time.time()
     except Exception as e:
-        pass
+        print(f"Lỗi xử lý tin nhắn: {e}")
+    
 
 
 pi_client_id = f"Pi_Master_{random.randint(1000, 9999)}"
