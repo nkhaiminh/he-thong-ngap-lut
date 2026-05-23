@@ -81,7 +81,8 @@
         });
 
         function updateUI() {
-            fetch('/api/update')
+            // Thay vì fetch('/api/update')
+            fetch('https://app-ngap-lut-hcm.onrender.com/api/update')
                 .then(r => r.json())
                 .then(data => {
                     stations.forEach(id => {
