@@ -17,7 +17,7 @@
 <body>
     <nav class="navbar navbar-dark bg-dark mb-4 shadow">
         <div class="container justify-content-center">
-            <span class="navbar-brand mb-0 fs-5 text-wrap text-center fw-bold">HỆ THỐNG QUAN TRẮC VÀ ĐIỀU KHIỂN NGẬP LỤT ĐÔ THỊ</span>
+            <span class="navbar-brand h1 mb-0 fs-3">HỆ THỐNG QUAN TRẮC VÀ ĐIỀU KHIỂN NGẬP LỤT ĐÔ THỊ</span>
         </div>
     </nav>
 
@@ -29,7 +29,6 @@
         const stations = ['tuyen1', 'tuyen2', 'tuyen3'];
         const charts = {};
 
-        // Khởi tạo giao diện
         stations.forEach((id, index) => {
             const html = `
                 <div class="col-lg-4">
@@ -38,69 +37,90 @@
                             <h4 class="mb-0 text-primary">Tuyến Đường ${index + 1}</h4>
                             <span id="conn-${id}" class="badge bg-secondary conn-badge">Đang kết nối...</span>
                         </div>
+
                         <div class="text-center mt-3">
                             <div class="val-text"><span id="val-${id}">0</span> <span class="fs-4 text-muted">cm</span></div>
-                            <h6 id="level-desc-${id}" class="text-secondary mt-1">Trạng thái: Đang cập nhật</h6>
+                            <h6 id="level-desc-${id}" class="text-secondary mt-1">Trạng thái ngập: Đang cập nhật</h6>
+
                             <div class="mt-3 p-2 bg-light rounded text-start">
                                 <small class="text-muted d-block">Tác nhân gây ngập:</small>
                                 <strong>Cường độ mưa: <span id="rain-${id}" class="text-primary">0</span>%</strong><br>
                                 <strong> Dự báo (T+5): <span id="pred-${id}" class="ai-pred-text">0</span> cm</strong>
                             </div>
                         </div>
+
                         <canvas id="chart-${id}"></canvas>
+
                         <div class="mt-4 pt-3 border-top text-center">
-                            <p class="mb-2">Chế độ Rào: <b id="barrier-${id}" class="text-info">Tự động</b></p>
+                            <p class="mb-2">Chế độ Rào & Đèn: <b id="barrier-${id}" class="text-info">Tự động</b></p>
                             <div class="btn-group w-100">
-                                <button class="btn btn-danger" onclick="sendCtrl('${id}', 'ON')">Đóng</button>
-                                <button class="btn btn-success" onclick="sendCtrl('${id}', 'OFF')">Mở</button>
+                                <button class="btn btn-danger" onclick="sendCtrl('${id}', 'ON')">Đóng Rào</button>
+<button class="btn btn-success" onclick="sendCtrl('${id}', 'OFF')">Mở Rào</button>
                                 <button class="btn btn-secondary" onclick="sendCtrl('${id}', 'AUTO')">Auto</button>
                             </div>
                         </div>
                     </div>
                 </div>`;
             document.getElementById('dashboard').innerHTML += html;
+        });
 
-            // Khởi tạo biểu đồ
+        stations.forEach(id => {
             const ctx = document.getElementById(`chart-${id}`).getContext('2d');
             charts[id] = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [], datasets: [{ label: 'Mực nước (cm)', data: [], borderColor: '#3498db', borderWidth: 2, fill: true, tension: 0.4 }] },
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Mực nước (cm)', data: [],
+                        borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
+                    }]
+                },
                 options: { animation: false, scales: { y: { beginAtZero: true, max: 20 } } }
             });
         });
 
         function updateUI() {
-            fetch('/api/update?_t=' + new Date().getTime(), { cache: 'no-store' })
+            fetch('/api/update')
                 .then(r => r.json())
                 .then(data => {
                     stations.forEach(id => {
                         const info = data[id];
                         const val = info.val;
-                        
+
                         document.getElementById(`val-${id}`).innerText = val;
                         document.getElementById(`rain-${id}`).innerText = info.rain_percent;
                         document.getElementById(`pred-${id}`).innerText = info.pred;
                         document.getElementById(`barrier-${id}`).innerText = info.barrier;
 
-                        // Cập nhật mô tả trạng thái
-                        const descElem = document.getElementById(`level-desc-${id}`);
-                        if (val < 1) descElem.innerHTML = "<span class='text-success'>An toàn</span>";
-                        else if (val <= 3) descElem.innerHTML = "<span class='text-primary'>Ngập nhẹ (Đèn 1)</span>";
-                        else if (val <= 6) descElem.innerHTML = "<span class='text-warning'>Ngập vừa (Đèn 2)</span>";
-                        else descElem.innerHTML = "<span class='text-danger fw-bold'>Ngập Nặng (Hạ rào)</span>";
-
-                        // Cập nhật kết nối
                         const connElem = document.getElementById(`conn-${id}`);
                         connElem.innerText = info.status_conn;
                         connElem.className = info.status_conn === "Trực tuyến" ? "badge bg-success conn-badge" : "badge bg-danger conn-badge";
 
-                        // Cập nhật biểu đồ
+                       const descElem = document.getElementById(`level-desc-${id}`);
+
+        if (val < 1) {
+            descElem.innerHTML = "<span class='text-success'>An toàn (Không ngập)</span>";
+        }
+        else if (val >= 1 && val <= 3) {
+            descElem.innerHTML = "<span class='text-primary'>Ngập nhẹ (Đèn 1)</span>";
+        }
+        else if (val > 3 && val <= 6) {
+            descElem.innerHTML = "<span class='text-warning'>Ngập vừa (Đèn 2)</span>";
+        }
+        else {
+            descElem.innerHTML = "<span class='text-danger fw-bold'>Ngập Nặng (Hạ rào chắn)</span>";
+        }
+
                         if (info.status_conn === "Trực tuyến") {
                             const now = new Date().toLocaleTimeString('vi-VN', { hour12: false });
                             const chart = charts[id];
                             chart.data.labels.push(now);
                             chart.data.datasets[0].data.push(val);
-                            if(chart.data.labels.length > 20) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+if(chart.data.labels.length > 20) {
+                                chart.data.labels.shift();
+                                chart.data.datasets[0].data.shift();
+                            }
                             chart.update();
                         }
                     });
@@ -108,10 +128,14 @@
         }
 
         function sendCtrl(id, act) {
-            fetch('/api/control', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({tuyen: id, action: act}) });
+            fetch('/api/control', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({tuyen: id, action: act})
+            });
         }
 
-        setInterval(updateUI, 2000);
+        setInterval(updateUI, 1000);
     </script>
 </body>
 </html>
