@@ -31,8 +31,7 @@ stations_data = {
 }
 
 
-# Lưu giá trị dự báo cũ (biến toàn cục)
-last_prediction = {f"tuyen{i}": 0 for i in range(1, 4)}
+
 
 def run_ai_prediction(tuyen_id):
     history = list(data_history[tuyen_id])
