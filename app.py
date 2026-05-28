@@ -33,24 +33,28 @@ stations_data = {
 
 def run_ai_prediction(tuyen_id):
     history = list(data_history[tuyen_id])
-    if len(history) < 5: return history[-1]["water"]
+    if len(history) < 5: 
+        return stations_data[tuyen_id]["val"]
 
-    # Lấy dữ liệu 5 mẫu gần nhất để tính tốc độ tăng
-    # X: [Rain_current], y: [water_change (water_t - water_t-1)]
-    X = [[h["rain_percent"]] for h in history[1:]]
-    y = [history[i]["water"] - history[i-1]["water"] for i in range(1, len(history))]
-
+    # 1. Tính toán cơ bản từ Linear Regression
+    X = np.array([[i, data["rain_percent"]] for i, data in enumerate(history)])
+    y = np.array([data["water"] for data in history]).reshape(-1, 1)
     model = LinearRegression().fit(X, y)
-    
-    # Dự báo mức tăng trong 5 phút tới
+
     current_rain = history[-1]["rain_percent"]
-    delta_pred = model.predict([[current_rain]])[0]
+    future_X = np.array([[len(history) + 5, current_rain]])
+    base_prediction = model.predict(future_X)[0][0]
+
+    # 2. Thêm "trọng số mưa" (Rain Impact Factor)
+    # Giả sử: cứ 10% mưa sẽ đóng góp 0.1cm vào mực nước sau 5 phút
+    # Bạn có thể thay đổi hệ số 0.01 để tăng/giảm độ nhạy
+    rain_impact = current_rain * 0.01 
     
-    # Dự báo mực nước mới = Mực nước hiện tại + (delta_pred * 5)
-    # Nhân 5 là giả định tốc độ tăng đó kéo dài trong 5 phút tới
-    prediction = history[-1]["water"] + (delta_pred * 5)
-    
-    return round(float(max(history[-1]["water"], prediction)), 1)
+    # 3. Kết hợp kết quả
+    # max() đảm bảo dự báo không thấp hơn mực nước hiện tại khi có mưa
+    final_prediction = max(history[-1]["water"], base_prediction + rain_impact)
+
+    return round(float(final_prediction), 1)
 
 
 def on_message(client, userdata, msg):
