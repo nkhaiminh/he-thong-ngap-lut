@@ -33,43 +33,53 @@ stations_data = {
 
 
 
-def run_ai_prediction_simple(tuyen_id):
+def run_ai_prediction(tuyen_id):
+
     history = list(data_history[tuyen_id])
-    if len(history) < 5:
-        return history[-1]["water"] if history else 0
+
+    if len(history) < 5: 
+
+        return stations_data[tuyen_id]["val"]
+
+
+
+    # 1. Tính toán cơ bản từ Linear Regression
+
+    X = np.array([[i, data["rain_percent"]] for i, data in enumerate(history)])
+
+    y = np.array([data["water"] for data in history]).reshape(-1, 1)
+
+    model = LinearRegression().fit(X, y)
+
+
+
+    current_rain = history[-1]["rain_percent"]
+
+    future_X = np.array([[len(history) + 5, current_rain]])
+
+    base_prediction = model.predict(future_X)[0][0]
+
+
+
+    # 2. Thêm "trọng số mưa" (Rain Impact Factor)
+
+    # Giả sử: cứ 10% mưa sẽ đóng góp 0.1cm vào mực nước sau 5 phút
+
+    # Bạn có thể thay đổi hệ số 0.01 để tăng/giảm độ nhạy
+
+    rain_impact = current_rain * 0.01 
+
     
-    # Lấy 5 mẫu gần nhất
-    recent = history[-5:]
-    
-    # Tính gradient (tốc độ thay đổi trung bình)
-    water_levels = [data["water"] for data in recent]
-    rain_values = [data["rain_percent"] for data in recent]
-    
-    # Nếu đang có mưa (rain > 30%)
-    if rain_values[-1] > 30:
-        # Tính tốc độ tăng trung bình
-        if water_levels[-1] > water_levels[0]:
-            avg_increase = (water_levels[-1] - water_levels[0]) / 4
-            # Dự đoán T+5 với tốc độ tăng hiện tại
-            prediction = water_levels[-1] + avg_increase * 5
-        else:
-            # Nước đang giảm nhưng có mưa, giảm chậm hơn
-            avg_decrease = (water_levels[0] - water_levels[-1]) / 4
-            prediction = max(water_levels[-1], water_levels[-1] - avg_decrease * 2)
-    else:
-        # Không mưa, nước sẽ rút dần
-        if water_levels[-1] > water_levels[0]:
-            # Đang xuống dốc
-            avg_decrease = (water_levels[-1] - water_levels[0]) / 4
-            prediction = water_levels[-1] - avg_decrease * 5
-        else:
-            prediction = water_levels[-1]
-    
-    # Nếu có mưa lớn, đảm bảo dự đoán không thấp hơn hiện tại
-    if rain_values[-1] > 50:
-        prediction = max(prediction, water_levels[-1])
-    
-    return round(float(max(0, prediction)), 1)
+
+    # 3. Kết hợp kết quả
+
+    # max() đảm bảo dự báo không thấp hơn mực nước hiện tại khi có mưa
+
+    final_prediction = max(history[-1]["water"], base_prediction + rain_impact)
+
+
+
+    return round(float(final_prediction), 1)
 
 def on_message(client, userdata, msg):
     try:
