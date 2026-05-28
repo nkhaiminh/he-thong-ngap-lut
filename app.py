@@ -8,13 +8,12 @@ import collections
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from flask_cors import CORS # 1. Import thư viện
-app = Flask(__name__)
 CORS(app) # 2. Thêm dòng này sau khi tạo app Flask
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 # Sửa dòng này trong app.py
 MQTT_TOPIC_SUB = "iuh/phongngap/#"
-MQTT_TOPIC_PUB_PREFIX = "/phongngap/control/"
+MQTT_TOPIC_PUB_PREFIX = "iuh/phongngap/control/"
 
 app = Flask(__name__)
 
