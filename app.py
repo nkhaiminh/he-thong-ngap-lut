@@ -33,18 +33,29 @@ stations_data = {
 
 
 
-# Lưu giá trị dự báo cũ (biến toàn cục)
-last_prediction = {f"tuyen{i}": 0 for i in range(1, 4)}
-
 def run_ai_prediction(tuyen_id):
-    # ... (code Linear Regression hiện tại của bạn)
-    raw_prediction = max(history[-1]["water"], base_prediction + rain_impact)
+    history = list(data_history[tuyen_id])
+    if len(history) < 10: 
+        # Nếu chưa đủ dữ liệu, dự đoán dựa trên tốc độ thay đổi gần nhất
+        if len(history) >= 3:
+            recent_changes = [history[i]["water"] - history[i-1]["water"] 
+                            for i in range(-3, 0)]
+            avg_change = sum(recent_changes) / len(recent_changes)
+            return round(max(0, history[-1]["water"] + avg_change * 5), 1)
+        return history[-1]["water"] if history else 0
     
-    # Làm mượt (Smoothing): alpha nằm trong (0, 1). alpha nhỏ = mượt hơn
-    alpha = 0.3
-    last_prediction[tuyen_id] = (alpha * raw_prediction) + ((1 - alpha) * last_prediction[tuyen_id])
+    # Lấy 10 mẫu gần nhất để dự đoán
+    recent_history = history[-10:]
     
-    return round(float(last_prediction[tuyen_id]), 1)
+    # Cách 1: Chỉ dùng rain_percent để dự đoán (không dùng thời gian)
+    X = np.array([[data["rain_percent"]] for data in recent_history])
+    y = np.array([data["water"] for data in recent_history])
+    
+    model = LinearRegression().fit(X, y)
+    
+    # Dự đoán với lượng mưa hiện tại
+    current_rain = recent_history[-1]["rain_percent"]
+    prediction = model.predict([[current_rain]])[0]
 
 def on_message(client, userdata, msg):
     try:
