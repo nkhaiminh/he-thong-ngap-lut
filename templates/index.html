@@ -134,7 +134,10 @@ if(chart.data.labels.length > 20) {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({tuyen: id, action: act})
-            });
+            })
+            .then(response => response.json())
+            .then(data => console.log("Server phản hồi:", data))
+            .catch(error => console.error("Lỗi:", error));    
         }
 
         setInterval(updateUI, 1000);
