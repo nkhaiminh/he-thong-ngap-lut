@@ -33,21 +33,18 @@ stations_data = {
 
 
 
+# Lưu giá trị dự báo cũ (biến toàn cục)
+last_prediction = {f"tuyen{i}": 0 for i in range(1, 4)}
+
 def run_ai_prediction(tuyen_id):
-    history = list(data_history[tuyen_id])
-    if len(history) < 10: return stations_data[tuyen_id]["val"]
+    # ... (code Linear Regression hiện tại của bạn)
+    raw_prediction = max(history[-1]["water"], base_prediction + rain_impact)
     
-    # Tính tốc độ dâng nước: (Nước hiện tại - Nước cách đây 5 phút)
-    delta = history[-1]["water"] - history[-5]["water"]
+    # Làm mượt (Smoothing): alpha nằm trong (0, 1). alpha nhỏ = mượt hơn
+    alpha = 0.3
+    last_prediction[tuyen_id] = (alpha * raw_prediction) + ((1 - alpha) * last_prediction[tuyen_id])
     
-    # Nếu đang có mưa, dự báo tiếp tục dâng theo tốc độ hiện tại
-    if history[-1]["rain_percent"] > 0:
-        prediction = history[-1]["water"] + (delta * 0.8) 
-    else:
-        # Nếu tạnh mưa, dự báo nước đứng yên hoặc rút dần
-        prediction = history[-1]["water"]
-        
-    return round(float(max(history[-1]["water"], prediction)), 1)
+    return round(float(last_prediction[tuyen_id]), 1)
 
 def on_message(client, userdata, msg):
     try:
