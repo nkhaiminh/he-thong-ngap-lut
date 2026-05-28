@@ -33,20 +33,24 @@ stations_data = {
 
 def run_ai_prediction(tuyen_id):
     history = list(data_history[tuyen_id])
-    if len(history) < 5: return 0
+    if len(history) < 5: return history[-1]["water"]
 
-    #Dự báo mức nước dựa trên (Thời gian, Cường độ mưa)
-    X = np.array([[i, data["rain_percent"]] for i, data in enumerate(history)])
-    y = np.array([data["water"] for data in history]).reshape(-1, 1)
+    # Lấy dữ liệu 5 mẫu gần nhất để tính tốc độ tăng
+    # X: [Rain_current], y: [water_change (water_t - water_t-1)]
+    X = [[h["rain_percent"]] for h in history[1:]]
+    y = [history[i]["water"] - history[i-1]["water"] for i in range(1, len(history))]
 
     model = LinearRegression().fit(X, y)
-
-    # Dự báo T+5, giả định cường độ mưa giữ nguyên như hiện tại
+    
+    # Dự báo mức tăng trong 5 phút tới
     current_rain = history[-1]["rain_percent"]
-    future_X = np.array([[len(history) + 5, current_rain]])
-    prediction = model.predict(future_X)[0][0]
-
-    return round(float(max(0, prediction)), 1)
+    delta_pred = model.predict([[current_rain]])[0]
+    
+    # Dự báo mực nước mới = Mực nước hiện tại + (delta_pred * 5)
+    # Nhân 5 là giả định tốc độ tăng đó kéo dài trong 5 phút tới
+    prediction = history[-1]["water"] + (delta_pred * 5)
+    
+    return round(float(max(history[-1]["water"], prediction)), 1)
 
 
 def on_message(client, userdata, msg):
